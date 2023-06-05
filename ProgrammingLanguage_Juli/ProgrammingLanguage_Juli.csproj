@@ -58,6 +58,7 @@
     <Compile Include="Content\AST\AST_FunctionCreate.cs" />
     <Compile Include="Content\AST\AST_If.cs" />
     <Compile Include="Content\AST\AST_Integer.cs" />
+    <Compile Include="Content\AST\AST_Len.cs" />
     <Compile Include="Content\AST\AST_MathOperation.cs" />
     <Compile Include="Content\AST\AST_None.cs" />
     <Compile Include="Content\AST\AST_Range.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="Content\Token.cs" />
     <Compile Include="Content\VariableItem.cs" />
     <Compile Include="Helper\DebugHelper.cs" />
+    <Compile Include="Helper\Extensions.cs" />
     <Compile Include="Helper\VariableHelper.cs" />
     <Compile Include="Interpreter.cs" />
     <Compile Include="Lexer.cs" />

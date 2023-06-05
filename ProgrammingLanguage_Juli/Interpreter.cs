@@ -3,6 +3,7 @@ using Juli_ProgLang.Helper;
 using ProgrammingLanguage_Juli;
 using ProgrammingLanguage_Juli.Content;
 using ProgrammingLanguage_Juli.Content.AST;
+using ProgrammingLanguage_Juli.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -125,6 +126,7 @@ namespace Juli_ProgLang
         }
         private object GetVariableValue(AbstractSyntaxTree node)
         {
+            Debug.WriteLine("\tDO : " + node);
             if (node is AST_VariableCall variable_call)
                 return GetVariableCallValue(variable_call);
             else if (node is AST_String ast_string)
@@ -143,17 +145,35 @@ namespace Juli_ProgLang
                 Console.WriteLine(ast_none.Value);
             else if (node is AST_FunctionCall function_call)
                 return CallFunction(function_call);
+            else if (node is AST_If ast_if)
+                return HandleIf(ast_if);
+            else if (node is AST_Len ast_len)
+                return GetVariableLength(ast_len);
+            Debug.WriteLine(node);
+
             throw new Exception($"Could not get value of variable {node} -> GetVariableValue(node)");
         }
         private object GetArrayValueByIndex(AST_Arrayaccess array_access)
         {
             var array = GetVariableByName(array_access.VariableName).Value as AbstractSyntaxTree[];
 
-            if (array_access.Start == array_access.End)
-                return GetVariableValue(array[array_access.Start]);
-            else if(array_access.End == -1)    
-                return array.Skip(array_access.Start).ToArray();
-            return array.Skip(array_access.Start).Take(array_access.End - array_access.Start).ToArray();
+            int start = 0, end = 0;
+            if (array_access.Start is AST_Integer ast_int1)
+                start = ast_int1.Value;
+            else if (array_access.Start is AST_VariableCall var_call)
+                start = GetVariableCallValue(var_call).TryToInt("Accessing array is only allowed by an integer");
+
+            if (array_access.End is AST_Integer ast_int2)
+                end = ast_int2.Value;
+            else if (array_access.End is AST_VariableCall var_call)
+                end = GetVariableCallValue(var_call).TryToInt("Accessing array is only allowed by an integer");
+
+
+            if (start == end)
+                return GetVariableValue(array[start]);
+            else if(end == -1)    
+                return array.Skip(start).ToArray();
+            return array.Skip(start).Take(end - start).ToArray();
         }
 
         private IVariable AssignFunctionParameterVariable(string name, VariableDataType datatype, object value, int minbracketDepth)
@@ -166,7 +186,6 @@ namespace Juli_ProgLang
 
         private void DeleteVariable(string name)
         {
-            Debug.WriteLine("delete variable: " + name);
             Variables.Remove(name);
         }
         private void ChangeIterableVariable(string name, object newValue)
@@ -192,7 +211,6 @@ namespace Juli_ProgLang
 
             if (variable_assign.VariableType == VariableType.Array)
             {
-                Debug.WriteLine("Change array value: " + variable_assign.Name);
                 dataType = VariableHelper.DetectArrayDatatype(variable_assign.AssignItems);
                 value = variable_assign.AssignItems;
             }
@@ -241,6 +259,8 @@ namespace Juli_ProgLang
         }
         private object CallFunction(AST_FunctionCall function_call)
         {
+            object returnValue = null;
+
             if (Functions.TryGetValue(function_call.Name, out FunctionItem item))
             {
                 if (!ParameterAndArgumentMatch(function_call.Parameter, item.Parameter))
@@ -255,19 +275,26 @@ namespace Juli_ProgLang
 
                 var interpretResult = InterpretNext(item.Actions);
                 if (interpretResult == null)
-                    return null;
+                    returnValue = null;
                 if (interpretResult is AST_Return ast_return)
-                    return GetVariableValue(ast_return.SubItems);
+                    returnValue = GetVariableValue(ast_return.SubItems);
+
+                //remove the variables:
+                for (int i = 0; i < function_call.Parameter.Length; i++)
+                {
+                    var variableItem = item.Parameter[i] as AST_FunctionArgument;
+                    DeleteVariable(variableItem.Name);
+                }
+
+                return returnValue;
             }
             else if (!GetBuiltinFunction(function_call.Name, function_call))
                 throw new Exception($"No function with the name {function_call.Name} was found");
             
-            return "Hall0o";
+            return "";
         }
         private bool GetBuiltinFunction(string name, AST_FunctionCall function_call)
         {
-            Debug.WriteLine("function: " + name);
-
             if (name.Equals("print", StringComparison.Ordinal))
             {
                 Console.WriteLine(GetParameterValue(function_call.Parameter));
@@ -294,7 +321,10 @@ namespace Juli_ProgLang
                 //create the iteration variable, with the value 0 and assign the current bracket depth to it.
                 AssignIterableVariable(for_loop.IterationVariableName, VariableDataType.Integer, 0, parser.bracketDepth.CurlyBracket);
 
-                for (int i = range.Start; i < range.End; i++)
+                int start = GetVariableValue(range.Start).TryToInt("");
+                int end = GetVariableValue(range.End).TryToInt("");
+
+                for (int i = start; i < end; i++)
                 {
                     //update the value of the variable
                     ChangeIterableVariable(for_loop.IterationVariableName, i);
@@ -329,11 +359,74 @@ namespace Juli_ProgLang
         private string GetParameterValue(AbstractSyntaxTree[] items)
         {
             var res = GetVariableValue(items);
+            if (res == null)
+                return "null";
 
             //print the array as actual values:
             if (res is AbstractSyntaxTree[] arr) 
                 return "[" + string.Join(",", arr.Select(x => GetVariableValue(x))) + "]";
             return res.ToString();
+        }
+
+        private bool CheckSmallCondition(AbstractSyntaxTree[] items)
+        {
+            if(items.Length == 3)
+            {
+                dynamic value1 = GetVariableValue(items[0]);
+                dynamic value2 = GetVariableValue(items[2]);
+                var booloperation = (items[1] as AST_BoolOperation).BoolOperation;
+
+                switch (booloperation)
+                {
+                    case BoolOperation.Equals:
+                        return value1 == value2;
+                    case BoolOperation.NotEquals:
+                        return value1 != value2;
+                    case BoolOperation.Greater:
+                        return value1 > value2;
+                    case BoolOperation.GreaterEquals:
+                        return value1 >= value2;
+                    case BoolOperation.Smaller:
+                        return value1 < value2;
+                    case BoolOperation.SmallerEquals:
+                        return value1 <= value2;
+                }
+            }
+            return false;
+        }
+        private bool CheckCondition(AST_If ast_if)
+        {
+            //TODO: split conditions on && ||
+            return CheckSmallCondition(ast_if.Condition);
+        }
+        private object HandleIf(AST_If ast_if)
+        {
+            if (CheckCondition(ast_if))
+            {
+                foreach (var item in ast_if.SubItems)
+                {
+                    var value = InterpretNext(item);
+                    if (value != null)
+                        return value;
+                }
+            }
+            return null;
+        }
+
+        private object GetVariableLength(AST_Len ast_len)
+        {
+            if (ast_len.Variable is AST_VariableCall var_call)
+            {
+                var val = GetVariableValue(var_call);
+                if (val is AbstractSyntaxTree[] items)
+                    return items.Length;
+                return val;
+            }
+            else if (ast_len.Variable is AST_String ast_str)
+            {
+                return ast_str.Value.Length;
+            }
+            throw new Exception($"Can not get length of {ast_len.Variable}");
         }
 
         private object InterpretNext(AbstractSyntaxTree[] nodes)
@@ -350,7 +443,6 @@ namespace Juli_ProgLang
         {
             if (node == null || node is AST_None)
             {
-                Debug.WriteLine("Node is none");
                 return null;
             }
 
@@ -368,6 +460,10 @@ namespace Juli_ProgLang
                 CallArrayAccess(arrayaccess);
             else if (node is AST_Return ast_return)
                 return ast_return;
+            else if (node is AST_If ast_if)
+                return HandleIf(ast_if);
+            else if (node is AST_Len ast_len)
+                return GetVariableLength(ast_len);
             else if (node is AST_BracketChanged bracket_changed)
             {
                 Parser_BracketDepthChanged(bracket_changed.currentDepth);

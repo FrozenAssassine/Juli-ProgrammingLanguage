@@ -75,7 +75,12 @@ namespace Juli_ProgLang
         }
         private bool IsSequence(string sequence)
         {
-            return currentChar == sequence[0] && Text.Substring(Position, sequence.Length).Equals(sequence);
+
+            //example: 'in' is in the word 'index':
+            if (char.IsLetter(Text[Position + sequence.Length]))
+                return false;
+
+            return currentChar == sequence[0] && (Position + sequence.Length) < Text.Length && Text.Substring(Position, sequence.Length).Equals(sequence);
         }
 
         public Token NextToken()
@@ -294,6 +299,11 @@ namespace Juli_ProgLang
                     Advance(6);
                     return new Token(Identifiers.Return);
                 }
+                if (IsSequence("len"))
+                {
+                    Advance(3);
+                    return new Token(Keywords.Len);
+                }
                 if (char.IsLetter(currentChar) || currentChar == '_')
                 {
                     return new Token(Identifiers.Identifier, GetIdentifier());
@@ -305,7 +315,7 @@ namespace Juli_ProgLang
     }
     public enum Keywords
     {
-        If, For, In, Else, True, False, Range
+        If, For, In, Else, True, False, Range, Len
     }
     public enum Identifiers
     {

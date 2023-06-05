@@ -8,10 +8,12 @@ namespace Juli_ProgLang.Content.AST
 {
     internal class AST_If : AbstractSyntaxTree
     {
+        public readonly AbstractSyntaxTree[] Condition;
         public readonly AbstractSyntaxTree[] SubItems;
-        public AST_If(AbstractSyntaxTree[] subitems)
+        public AST_If(AbstractSyntaxTree[] condition, AbstractSyntaxTree[] subitems)
         {
             this.SubItems = subitems;
+            this.Condition = condition;
         }
     }
 }

@@ -62,7 +62,9 @@ namespace ProgrammingLanguage_Juli
             else if (item is AST_If if_call)
             {
                 Console.WriteLine(indent + "If: ");
-                PrintArray(if_call.SubItems, indent + "\t");
+                PrintArray(if_call.Condition, indent + "\t");
+                Console.WriteLine(indent + "\tAction");
+                PrintArray(if_call.SubItems, indent + "\t\t");
             }
             else if (item is AST_Else else_call)
             {
@@ -92,7 +94,7 @@ namespace ProgrammingLanguage_Juli
 
         static void Main(string[] args)
         {
-            int Action = 0;
+            int Action = 1;
             string data = File.ReadAllText("code1.juli");
 
             if (Action == 0)

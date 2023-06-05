@@ -9,10 +9,10 @@ namespace ProgrammingLanguage_Juli.Content.AST
 {
     internal class AST_Range : AbstractSyntaxTree
     {
-        public readonly int Start;
-        public readonly int End;
+        public readonly AbstractSyntaxTree Start;
+        public readonly AbstractSyntaxTree End;
         
-        public AST_Range(int start, int end)
+        public AST_Range(AbstractSyntaxTree start, AbstractSyntaxTree end)
         {
             this.Start = start;
             this.End = end;

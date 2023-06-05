@@ -10,12 +10,12 @@ namespace ProgrammingLanguage_Juli.Content.AST
 {
     internal class AST_Arrayaccess : AbstractSyntaxTree
     {
-        public readonly int Start;
-        public readonly int End;
+        public readonly dynamic Start;
+        public readonly dynamic End;
         public readonly string VariableName;
         public VariableCallAction VariableCallAction = VariableCallAction.Read;
 
-        public AST_Arrayaccess(string variableName, int start, int end)
+        public AST_Arrayaccess(string variableName, dynamic start, dynamic end)
         {
             VariableName = variableName;
             Start = start;

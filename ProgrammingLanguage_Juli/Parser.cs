@@ -9,6 +9,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Windows.Forms;
 
 namespace ProgrammingLanguage_Juli
 {
@@ -108,13 +109,14 @@ namespace ProgrammingLanguage_Juli
             {
                 do
                 {
-                    identifier = GetTokenIdentifier(currentToken);
                     var item = Identify();
-                    if (identifier != Identifiers.Semicolon && identifier != Identifiers.Comma && identifier != Identifiers.LeftSqrBracket && identifier != Identifiers.RightSqrBracket)
+                    identifier= GetTokenIdentifier(currentToken);
+                    if (identifier != Identifiers.Semicolon && item != null)
                     {
                         assignValues.Add(item);
                     }
-                } while (identifier != Identifiers.Semicolon);
+                }
+                while (identifier != Identifiers.Semicolon);
                 return new AST_VariableAssignment(assignValues.ToArray(), variableName, VariableType.Array);
             }
 
@@ -122,8 +124,6 @@ namespace ProgrammingLanguage_Juli
             {
                 var item = Identify();
                 assignValues.Add(item);
-
-                Debug.WriteLine(identifier);
 
                 identifier = GetTokenIdentifier(currentToken);
             }
@@ -134,7 +134,8 @@ namespace ProgrammingLanguage_Juli
         private AbstractSyntaxTree GetVariableCreate()
         {
             NextToken(Identifiers.Variable);
-            string name = currentToken.Value.ToString();
+            string name = currentToken.Value?.ToString();
+            Debug.WriteLine("variable: " + name);
             NextToken(Identifiers.Identifier);
             return GetVariableAssingValue(name);
         }
@@ -144,7 +145,7 @@ namespace ProgrammingLanguage_Juli
             NextToken(Identifiers.Add);
 
             //concatenate strings:
-            if (GetTokenIdentifier(last) == Identifiers.String || GetTokenIdentifier(last) == Identifiers.Identifier)
+            if (GetTokenIdentifier(last) == Identifiers.String)
                 return new AST_Concatinate(Identify(last), Identify());
             return new AST_MathOperation(MathOperation.Add);
         }
@@ -154,24 +155,20 @@ namespace ProgrammingLanguage_Juli
             NextToken(Identifiers.Function);
             string functionName = currentToken.Value.ToString();
             NextToken(Identifiers.Identifier);
-
-            //skip bracket:
-            Identify();
-
             List<AbstractSyntaxTree> arguments = new List<AbstractSyntaxTree>();
+            AbstractSyntaxTree returnType = null;
 
-            while (startdepth.Parenthesis != bracketDepth.Parenthesis)
+            do
             {
                 var item = Identify();
                 if (item == null)
                     continue;
-
                 arguments.Add(item);
             }
+            while (startdepth.Parenthesis != bracketDepth.Parenthesis);
 
             //if function has a return value:
-            AbstractSyntaxTree returnType = null;
-            if (GetTokenIdentifier(currentToken) == Identifiers.Colon)
+            if (currentToken != null && GetTokenIdentifier(currentToken) == Identifiers.Colon)
             {
                 NextToken();
                 returnType = Identify();
@@ -198,16 +195,15 @@ namespace ProgrammingLanguage_Juli
             BracketDepth startdepth = new BracketDepth(bracketDepth);
             List<AbstractSyntaxTree> parameter = new List<AbstractSyntaxTree>();
 
-            NextToken();
             do
             {
                 var item = Identify();
                 if (item == null)
                     continue;
+
                 parameter.Add(item);
             }
             while (startdepth.Parenthesis != bracketDepth.Parenthesis);
-            //parameter.Add(new AST_End(EndType.FunctionCall));
 
             return parameter.ToArray();
         }
@@ -217,41 +213,48 @@ namespace ProgrammingLanguage_Juli
 
             //supported array access formats: [1], [1:5], [:5], [1:], [:]
             var identifier = GetTokenIdentifier(currentToken);
-            List<Token> tokens = new List<Token>();
-            int getNumber(int index) => int.Parse((Identify(tokens[index]) as AST_Integer).Value.ToString());
 
-            if (identifier == Identifiers.Integer || identifier == Identifiers.Colon)
+            List<(AbstractSyntaxTree item, Identifiers id)> ast_items = new List<(AbstractSyntaxTree item, Identifiers id)>();
+            dynamic getValue(int index)
+            {
+                if (ast_items[index].item is AST_Integer ast_int)
+                    return int.Parse((ast_int).Value.ToString());
+                else if (ast_items[index].item is AST_VariableCall var_call)
+                    return var_call;
+                return null;
+            }
+            if (identifier == Identifiers.Integer || identifier == Identifiers.Identifier || identifier == Identifiers.Colon)
             {
                 do
                 {
-                    tokens.Add(currentToken);
-                    NextToken();
+                    var identify = Identify();
                     identifier = GetTokenIdentifier(currentToken);
+                    ast_items.Add((identify, identifier));
                 }
                 while (identifier != Identifiers.RightSqrBracket);
 
                 NextToken(Identifiers.RightSqrBracket);
 
                 //[:], [5]
-                if (tokens.Count == 1)
+                if (ast_items.Count == 1)
                 {
-                    if (GetTokenIdentifier(tokens[0]) == Identifiers.Colon)
+                    if (ast_items[0].id == Identifiers.Colon)
                         return new AST_Arrayaccess(variableName, 0, -1);
-                    return new AST_Arrayaccess(variableName, getNumber(0), getNumber(0));
+                    return new AST_Arrayaccess(variableName, getValue(0), getValue(0));
                 }
-                else if (tokens.Count == 2) //[0:], [:1]
+                else if (ast_items.Count == 2) //[0:], [:1]
                 {
                     //[:1]
-                    if (GetTokenIdentifier(tokens[0]) == Identifiers.Colon)
-                        return new AST_Arrayaccess(variableName, 0, getNumber(1));
+                    if (ast_items[0].id == Identifiers.Colon)
+                        return new AST_Arrayaccess(variableName, 0, getValue(1));
                     else //[0:]
-                        return new AST_Arrayaccess(variableName, getNumber(0), -1);
+                        return new AST_Arrayaccess(variableName, getValue(0), -1);
                 }
-                else if (tokens.Count == 3) //[0:5]
+                else if (ast_items.Count == 3) //[0:5]
                 {
-                    return new AST_Arrayaccess(variableName, getNumber(0), getNumber(2));
+                    return new AST_Arrayaccess(variableName, getValue(0), getValue(2));
                 }
-                throw new Exception("Invalid array access format. Supported: [1:5], [:5], [1:], [:]");
+                throw new Exception("Invalid array access format. Supported: [1:5], [:5], [1:], [:], [5]");
             }
             return null;
         }
@@ -290,21 +293,24 @@ namespace ProgrammingLanguage_Juli
             BracketDepth startDepth = new BracketDepth(bracketDepth);
             NextToken(Keywords.If); //skip if
 
-            List<AbstractSyntaxTree> items = new List<AbstractSyntaxTree>();
+            List<AbstractSyntaxTree> actions = new List<AbstractSyntaxTree>();
+            List<AbstractSyntaxTree> condition = new List<AbstractSyntaxTree>();
             //if-condition:
-            items.Add(Identify());
-            while (startDepth.Parenthesis != bracketDepth.Parenthesis)
+            do
             {
-                items.Add(Identify());
+                var identify = Identify();
+                if(identify != null)
+                    condition.Add(identify);
             }
+            while (startDepth.Parenthesis != bracketDepth.Parenthesis);
 
-            items.Add(Identify());
+            actions.Add(Identify());
             while (startDepth.CurlyBracket != bracketDepth.CurlyBracket)
             {
-                items.Add(Identify());
+                actions.Add(Identify());
             }
 
-            return new AST_If(items.ToArray());
+            return new AST_If(condition.ToArray(), actions.ToArray());
         }
         private AbstractSyntaxTree GetElseKeyword()
         {
@@ -321,7 +327,6 @@ namespace ProgrammingLanguage_Juli
             }
             while (startDepth.CurlyBracket != bracketDepth.CurlyBracket);
 
-            //Debug.WriteLine("ELSE: " + currentToken.Type);
             return new AST_Else(items.ToArray());
         }
 
@@ -366,16 +371,22 @@ namespace ProgrammingLanguage_Juli
 
             NextToken(Keywords.Range);
             NextToken(Identifiers.LeftParen);
-            int start = Convert.ToInt32(currentToken.Value);
-            NextToken(Identifiers.Float, Identifiers.Integer);
+            var start = Identify(currentToken);
             NextToken(Identifiers.Comma);
-            int end = Convert.ToInt32(currentToken.Value);
-            NextToken(Identifiers.Float, Identifiers.Integer);
+            var end = Identify(currentToken);
             NextToken(Identifiers.RightParen);
 
             return new AST_Range(start, end);
         }
 
+        private AbstractSyntaxTree GetLenKeyword()
+        {
+            NextToken(Keywords.Len);
+            NextToken(Identifiers.LeftParen);
+            var variable = Identify();
+            NextToken(Identifiers.RightParen);
+            return new AST_Len(variable);
+        }
 
         private AbstractSyntaxTree Identify(Token token = null)
         {
@@ -393,27 +404,27 @@ namespace ProgrammingLanguage_Juli
                     case Identifiers.LeftSqrBracket:
                         NextToken(Identifiers.LeftSqrBracket);
                         bracketDepth.SquareBracket++;
-                        return Identify();
+                        return null;
                     case Identifiers.RightSqrBracket:
                         NextToken(Identifiers.RightSqrBracket);
                         bracketDepth.SquareBracket--;
-                        return Identify();
+                        return null;
                     case Identifiers.LeftCurly:
                         NextToken(Identifiers.LeftCurly);
                         bracketDepth.CurlyBracket++;
-                        return Identify();
+                        return null;
                     case Identifiers.RightCurly:
                         NextToken(Identifiers.RightCurly);
                         bracketDepth.CurlyBracket--;
-                        return Identify();
+                        return null;
                     case Identifiers.LeftParen:
                         NextToken(Identifiers.LeftParen);
                         bracketDepth.Parenthesis++;
-                        return Identify();
+                        return null;
                     case Identifiers.RightParen:
                         NextToken(Identifiers.RightParen);
                         bracketDepth.Parenthesis--;
-                        return Identify();
+                        return null;
 
                     case Identifiers.GreaterEquals:
                         NextToken(Identifiers.GreaterEquals);
@@ -505,6 +516,8 @@ namespace ProgrammingLanguage_Juli
                         return GetForLoop();
                     case Keywords.Range:
                         return GetRangeKeyword();
+                    case Keywords.Len:
+                        return GetLenKeyword();
                 }
                 return null;
             }
