@@ -68,3 +68,9 @@ print(myarray[2:-1]);
 print(myarray[1]);
 print(myarray[:]);
 ```
+
+### Repeat string:
+```py
+print("-" * 50);
+```
+
