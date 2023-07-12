@@ -1,5 +1,5 @@
  <p align="center">
-    <img src="images/icon.png" height="250px" width="auto" alt="alternate text">
+    <img src="images/icon.svg" height="200px" width="auto" alt="alternate text">
  </p>
  <h1  align="center">Juli Programming Language</h1>
  
