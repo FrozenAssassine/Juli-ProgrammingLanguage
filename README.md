@@ -1,9 +1,13 @@
-# Juli-ProgrammingLanguage
-
+ <p align="center">
+    <img src="images/icon.png" height="250px" width="auto" alt="alternate text">
+ </p>
+ <h1  align="center">Juli Programming Language</h1>
+ 
+ ###
+ 
 My own programming language called Juli
 
-
-Syntax:
+### Syntax:
 
 ### Comments:
 ```py
