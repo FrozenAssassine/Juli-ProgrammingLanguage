@@ -29,49 +29,42 @@ namespace ProgrammingLanguage_Juli
             currentToken = lexer.NextToken();
         }
 
-        private void NextToken(params Identifiers[] identifier)
+        private void NextToken(params SyntaxKind[] identifier)
         {
-            if (currentToken.Type is Identifiers id && identifier.Contains(id))
+            if (currentToken.Type is SyntaxKind id && identifier.Contains(id))
                 NextToken();
             else
                 throw new Exception($"Expected {string.Join(", ", identifier)}, but got {currentToken.Type}");
         }
-        private void NextToken(Identifiers identifier)
+        private void NextToken(SyntaxKind identifier)
         {
-            if (currentToken.Type is Identifiers id && id == identifier)
+            if (currentToken.Type is SyntaxKind id && id == identifier)
                 NextToken();
             else
                 throw new Exception($"Expected {identifier}, but got {currentToken.Type}");
-        }
-        private void NextToken(Keywords keyword)
-        {
-            if (currentToken.Type is Keywords id && id == keyword)
-                NextToken();
-            else
-                throw new Exception($"Expected {keyword}, but got {currentToken.Type}");
         }
         private Token NextToken()
         {
             lastToken = currentToken;
             return currentToken = lexer.NextToken();
         }
-        private Identifiers GetTokenIdentifier(Token token)
+        private SyntaxKind GetTokenIdentifier(Token token)
         {
             if (token == null)
                 throw new Exception("Missing semicolon");
-            return (Identifiers)token.Type;
+            return (SyntaxKind)token.Type;
         }
         private AbstractSyntaxTree GetIdentifier()
         {
             string value = currentToken.Value.ToString();
             if (value.Length > 0)
             {
-                Identifiers identifier = (Identifiers)NextToken().Type;
+                SyntaxKind identifier = (SyntaxKind)NextToken().Type;
 
                 // identifier(... -> function call:
-                if (identifier == Identifiers.LeftParen)
+                if (identifier == SyntaxKind.LeftParen_ID)
                     return new AST_FunctionCall(value, GetFunctionCallParameter());
-                else if (identifier == Identifiers.Colon)
+                else if (identifier == SyntaxKind.Colon_ID)
                     return GetFunctionArgument();
                 else
                     return GetVariableCall(value, identifier);
@@ -80,19 +73,19 @@ namespace ProgrammingLanguage_Juli
             return new AbstractSyntaxTree();
         }
 
-        private AbstractSyntaxTree GetVariableCall(string value, Identifiers identifier)
+        private AbstractSyntaxTree GetVariableCall(string value, SyntaxKind identifier)
         {
             //index access on an array:
-            if ((Identifiers)currentToken.Type == Identifiers.LeftSqrBracket)
+            if ((SyntaxKind)currentToken.Type == SyntaxKind.LeftSqrBracket_ID)
             {
                 var access = GetArrayAccess(value);
-                if (GetTokenIdentifier(currentToken) == Identifiers.Equals)
+                if (GetTokenIdentifier(currentToken) == SyntaxKind.Equals_ID)
                     access.VariableCallAction = VariableCallAction.Change;
                 return access;
             }
 
             //change the variable
-            if (identifier == Identifiers.Equals)
+            if (identifier == SyntaxKind.Equals_ID)
                 return GetVariableAssingValue(value);
             //read variable:
             else
@@ -100,61 +93,61 @@ namespace ProgrammingLanguage_Juli
         }
         private AbstractSyntaxTree GetVariableAssingValue(string variableName)
         {
-            NextToken(Identifiers.Equals);
-            Identifiers identifier = GetTokenIdentifier(currentToken);
+            NextToken(SyntaxKind.Equals_ID);
+            SyntaxKind identifier = GetTokenIdentifier(currentToken);
             List<AbstractSyntaxTree> assignValues = new List<AbstractSyntaxTree>();
 
             //Array:
-            if (identifier == Identifiers.LeftSqrBracket)
+            if (identifier == SyntaxKind.LeftSqrBracket_ID)
             {
                 do
                 {
                     var item = Identify();
                     identifier= GetTokenIdentifier(currentToken);
-                    if (identifier != Identifiers.Semicolon && item != null)
+                    if (identifier != SyntaxKind.Semicolon_ID && item != null)
                     {
                         assignValues.Add(item);
                     }
                 }
-                while (identifier != Identifiers.Semicolon);
+                while (identifier != SyntaxKind.Semicolon_ID);
                 return new AST_VariableAssignment(assignValues.ToArray(), variableName, VariableType.Array);
             }
 
-            while (identifier != Identifiers.Semicolon)
+            while (identifier != SyntaxKind.Semicolon_ID)
             {
                 var item = Identify();
                 assignValues.Add(item);
 
                 identifier = GetTokenIdentifier(currentToken);
             }
-            NextToken(Identifiers.Semicolon);
+            NextToken(SyntaxKind.Semicolon_ID);
             return new AST_VariableAssignment(assignValues.ToArray(), variableName);
         }
 
         private AbstractSyntaxTree GetVariableCreate()
         {
-            NextToken(Identifiers.Variable);
+            NextToken(SyntaxKind.Variable_ID);
             string name = currentToken.Value?.ToString();
             Debug.WriteLine("variable: " + name);
-            NextToken(Identifiers.Identifier);
+            NextToken(SyntaxKind.Identifier_ID);
             return GetVariableAssingValue(name);
         }
         private AbstractSyntaxTree GetAddOperator()
         {
             Token last = lastToken;
-            NextToken(Identifiers.Add);
+            NextToken(SyntaxKind.Add_ID);
 
             //concatenate strings:
-            if (GetTokenIdentifier(last) == Identifiers.String)
+            if (GetTokenIdentifier(last) == SyntaxKind.String_ID)
                 return new AST_Concatinate(Identify(last), Identify());
             return new AST_MathOperation(MathOperation.Add);
         }
         private AbstractSyntaxTree GetFunctionCreate()
         {
             BracketDepth startdepth = new BracketDepth(bracketDepth);
-            NextToken(Identifiers.Function);
+            NextToken(SyntaxKind.Function_ID);
             string functionName = currentToken.Value.ToString();
-            NextToken(Identifiers.Identifier);
+            NextToken(SyntaxKind.Identifier_ID);
             List<AbstractSyntaxTree> arguments = new List<AbstractSyntaxTree>();
             AbstractSyntaxTree returnType = null;
 
@@ -168,7 +161,7 @@ namespace ProgrammingLanguage_Juli
             while (startdepth.Parenthesis != bracketDepth.Parenthesis);
 
             //if function has a return value:
-            if (currentToken != null && GetTokenIdentifier(currentToken) == Identifiers.Colon)
+            if (currentToken != null && GetTokenIdentifier(currentToken) == SyntaxKind.Colon_ID)
             {
                 NextToken();
                 returnType = Identify();
@@ -209,12 +202,12 @@ namespace ProgrammingLanguage_Juli
         }
         private AST_Arrayaccess GetArrayAccess(string variableName)
         {
-            NextToken(Identifiers.LeftSqrBracket);
+            NextToken(SyntaxKind.LeftSqrBracket_ID);
 
             //supported array access formats: [1], [1:5], [:5], [1:], [:]
             var identifier = GetTokenIdentifier(currentToken);
 
-            List<(AbstractSyntaxTree item, Identifiers id)> ast_items = new List<(AbstractSyntaxTree item, Identifiers id)>();
+            List<(AbstractSyntaxTree item, SyntaxKind id)> ast_items = new List<(AbstractSyntaxTree item, SyntaxKind id)>();
             dynamic getValue(int index)
             {
                 if (ast_items[index].item is AST_Integer ast_int)
@@ -223,7 +216,7 @@ namespace ProgrammingLanguage_Juli
                     return var_call;
                 return null;
             }
-            if (identifier == Identifiers.Integer || identifier == Identifiers.Identifier || identifier == Identifiers.Colon)
+            if (identifier == SyntaxKind.Integer_ID || identifier == SyntaxKind.Identifier_ID || identifier == SyntaxKind.Colon_ID)
             {
                 do
                 {
@@ -231,21 +224,21 @@ namespace ProgrammingLanguage_Juli
                     identifier = GetTokenIdentifier(currentToken);
                     ast_items.Add((identify, identifier));
                 }
-                while (identifier != Identifiers.RightSqrBracket);
+                while (identifier != SyntaxKind.RightSqrBracket_ID);
 
-                NextToken(Identifiers.RightSqrBracket);
+                NextToken(SyntaxKind.RightSqrBracket_ID);
 
                 //[:], [5]
                 if (ast_items.Count == 1)
                 {
-                    if (ast_items[0].id == Identifiers.Colon)
+                    if (ast_items[0].id == SyntaxKind.Colon_ID)
                         return new AST_Arrayaccess(variableName, 0, -1);
                     return new AST_Arrayaccess(variableName, getValue(0), getValue(0));
                 }
                 else if (ast_items.Count == 2) //[0:], [:1]
                 {
                     //[:1]
-                    if (ast_items[0].id == Identifiers.Colon)
+                    if (ast_items[0].id == SyntaxKind.Colon_ID)
                         return new AST_Arrayaccess(variableName, 0, getValue(1));
                     else //[0:]
                         return new AST_Arrayaccess(variableName, getValue(0), -1);
@@ -262,20 +255,20 @@ namespace ProgrammingLanguage_Juli
         private AbstractSyntaxTree GetFunctionArgument()
         {
             string name = lastToken.Value.ToString();
-            NextToken(Identifiers.Colon);
+            NextToken(SyntaxKind.Colon_ID);
             var datatype = VariableHelper.DetectDataType(currentToken);
             NextToken();
-            if ((Identifiers)currentToken.Type == Identifiers.Comma)
+            if ((SyntaxKind)currentToken.Type == SyntaxKind.Comma_ID)
                 NextToken();
 
             return new AST_FunctionArgument(name, datatype);
         }
         private AbstractSyntaxTree GetReturnValue()
         {
-            NextToken(Identifiers.Return);
+            NextToken(SyntaxKind.Return_ID);
             List<AbstractSyntaxTree> Items = new List<AbstractSyntaxTree>();
 
-            Identifiers identifier;
+            SyntaxKind identifier;
             do
             {
                 identifier = GetTokenIdentifier(currentToken);
@@ -283,7 +276,7 @@ namespace ProgrammingLanguage_Juli
                 if (identify != null)
                     Items.Add(identify);
 
-            } while (identifier != Identifiers.Semicolon);
+            } while (identifier != SyntaxKind.Semicolon_ID);
 
             return new AST_Return(Items.ToArray());
         }
@@ -291,7 +284,7 @@ namespace ProgrammingLanguage_Juli
         private AbstractSyntaxTree GetIfKeyword()
         {
             BracketDepth startDepth = new BracketDepth(bracketDepth);
-            NextToken(Keywords.If); //skip if
+            NextToken(SyntaxKind.If_KW); //skip if
 
             List<AbstractSyntaxTree> actions = new List<AbstractSyntaxTree>();
             List<AbstractSyntaxTree> condition = new List<AbstractSyntaxTree>();
@@ -316,7 +309,7 @@ namespace ProgrammingLanguage_Juli
         {
             BracketDepth startDepth = new BracketDepth(bracketDepth);
 
-            NextToken(Keywords.Else);
+            NextToken(SyntaxKind.Else_KW);
             Identify(); //skip curly bracket
 
             List<AbstractSyntaxTree> items = new List<AbstractSyntaxTree>();
@@ -337,13 +330,13 @@ namespace ProgrammingLanguage_Juli
 
             BracketDepth startDepth = new BracketDepth(bracketDepth);
 
-            NextToken(Keywords.For);
+            NextToken(SyntaxKind.For_KW);
 
             Identify(); //bracket
-            NextToken(Identifiers.Variable);
+            NextToken(SyntaxKind.Variable_ID);
             string iterationVariableName = currentToken.Value.ToString();
-            NextToken(Identifiers.Identifier);
-            NextToken(Keywords.In);
+            NextToken(SyntaxKind.Identifier_ID);
+            NextToken(SyntaxKind.In_KW);
 
             AbstractSyntaxTree iterationOperator = null;
             while (startDepth.Parenthesis != bracketDepth.Parenthesis)
@@ -369,22 +362,22 @@ namespace ProgrammingLanguage_Juli
         private AbstractSyntaxTree GetRangeKeyword()
         {
 
-            NextToken(Keywords.Range);
-            NextToken(Identifiers.LeftParen);
+            NextToken(SyntaxKind.Range_KW);
+            NextToken(SyntaxKind.LeftParen_ID);
             var start = Identify(currentToken);
-            NextToken(Identifiers.Comma);
+            NextToken(SyntaxKind.Comma_ID);
             var end = Identify(currentToken);
-            NextToken(Identifiers.RightParen);
+            NextToken(SyntaxKind.RightParen_ID);
 
             return new AST_Range(start, end);
         }
 
         private AbstractSyntaxTree GetLenKeyword()
         {
-            NextToken(Keywords.Len);
-            NextToken(Identifiers.LeftParen);
+            NextToken(SyntaxKind.Len_KW);
+            NextToken(SyntaxKind.LeftParen_ID);
             var variable = Identify();
-            NextToken(Identifiers.RightParen);
+            NextToken(SyntaxKind.RightParen_ID);
             return new AST_Len(variable);
         }
 
@@ -396,130 +389,123 @@ namespace ProgrammingLanguage_Juli
             if (token == null)
                 return null;
 
-            if (token.Type is Identifiers identifier)
+            if (token.Type is SyntaxKind identifier)
             {
                 switch (identifier)
                 {
                     //bracketDepth:
-                    case Identifiers.LeftSqrBracket:
-                        NextToken(Identifiers.LeftSqrBracket);
+                    case SyntaxKind.LeftSqrBracket_ID:
+                        NextToken(SyntaxKind.LeftSqrBracket_ID);
                         bracketDepth.SquareBracket++;
                         return null;
-                    case Identifiers.RightSqrBracket:
-                        NextToken(Identifiers.RightSqrBracket);
+                    case SyntaxKind.RightSqrBracket_ID:
+                        NextToken(SyntaxKind.RightSqrBracket_ID);
                         bracketDepth.SquareBracket--;
                         return null;
-                    case Identifiers.LeftCurly:
-                        NextToken(Identifiers.LeftCurly);
+                    case SyntaxKind.LeftCurly_ID:
+                        NextToken(SyntaxKind.LeftCurly_ID);
                         bracketDepth.CurlyBracket++;
                         return null;
-                    case Identifiers.RightCurly:
-                        NextToken(Identifiers.RightCurly);
+                    case SyntaxKind.RightCurly_ID:
+                        NextToken(SyntaxKind.RightCurly_ID);
                         bracketDepth.CurlyBracket--;
                         return null;
-                    case Identifiers.LeftParen:
-                        NextToken(Identifiers.LeftParen);
+                    case SyntaxKind.LeftParen_ID:
+                        NextToken(SyntaxKind.LeftParen_ID);
                         bracketDepth.Parenthesis++;
                         return null;
-                    case Identifiers.RightParen:
-                        NextToken(Identifiers.RightParen);
+                    case SyntaxKind.RightParen_ID:
+                        NextToken(SyntaxKind.RightParen_ID);
                         bracketDepth.Parenthesis--;
                         return null;
 
-                    case Identifiers.GreaterEquals:
-                        NextToken(Identifiers.GreaterEquals);
+                    case SyntaxKind.GreaterEquals_ID:
+                        NextToken(SyntaxKind.GreaterEquals_ID);
                         return new AST_BoolOperation(BoolOperation.GreaterEquals);
-                    case Identifiers.Greater:
-                        NextToken(Identifiers.Greater);
+                    case SyntaxKind.Greater_ID:
+                        NextToken(SyntaxKind.Greater_ID);
                         return new AST_BoolOperation(BoolOperation.Greater);
-                    case Identifiers.Smaller:
-                        NextToken(Identifiers.Smaller);
+                    case SyntaxKind.Smaller_ID:
+                        NextToken(SyntaxKind.Smaller_ID);
                         return new AST_BoolOperation(BoolOperation.Smaller);
-                    case Identifiers.SmallerEquals:
-                        NextToken(Identifiers.SmallerEquals);
+                    case SyntaxKind.SmallerEquals_ID:
+                        NextToken(SyntaxKind.SmallerEquals_ID);
                         return new AST_BoolOperation(BoolOperation.SmallerEquals);
-                    case Identifiers.Not:
-                        NextToken(Identifiers.Not);
+                    case SyntaxKind.Not_ID:
+                        NextToken(SyntaxKind.Not_ID);
                         return new AST_BoolOperation(BoolOperation.Not);
-                    case Identifiers.NotEquals:
-                        NextToken(Identifiers.NotEquals);
+                    case SyntaxKind.NotEquals_ID:
+                        NextToken(SyntaxKind.NotEquals_ID);
                         return new AST_BoolOperation(BoolOperation.NotEquals);
-                    case Identifiers.Equals:
-                        NextToken(Identifiers.Equals);
+                    case SyntaxKind.Equals_ID:
+                        NextToken(SyntaxKind.Equals_ID);
                         return new AST_BoolOperation(BoolOperation.Equals);
-                    case Identifiers.Or:
-                        NextToken(Identifiers.Or);
+                    case SyntaxKind.Or_ID:
+                        NextToken(SyntaxKind.Or_ID);
                         return new AST_BoolOperation(BoolOperation.Or);
-                    case Identifiers.And:
-                        NextToken(Identifiers.And);
+                    case SyntaxKind.And_ID:
+                        NextToken(SyntaxKind.And_ID);
                         return new AST_BoolOperation(BoolOperation.And);
-                    case Identifiers.Compare:
-                        NextToken(Identifiers.Compare);
+                    case SyntaxKind.Compare_ID:
+                        NextToken(SyntaxKind.Compare_ID);
                         return new AST_BoolOperation(BoolOperation.Equals);
-                    case Identifiers.Divide:
-                        NextToken(Identifiers.Divide);
+                    case SyntaxKind.Divide_ID:
+                        NextToken(SyntaxKind.Divide_ID);
                         return new AST_MathOperation(MathOperation.Divide);
-                    case Identifiers.Multiply:
-                        NextToken(Identifiers.Multiply);
+                    case SyntaxKind.Multiply_ID:
+                        NextToken(SyntaxKind.Multiply_ID);
                         return new AST_MathOperation(MathOperation.Multiply);
-                    case Identifiers.Subtract:
-                        NextToken(Identifiers.Subtract);
+                    case SyntaxKind.Subtract_ID:
+                        NextToken(SyntaxKind.Subtract_ID);
                         return new AST_MathOperation(MathOperation.Subtract);
-                    case Identifiers.Modulo:
-                        NextToken(Identifiers.Modulo);
+                    case SyntaxKind.Modulo_ID:
+                        NextToken(SyntaxKind.Modulo_ID);
                         return new AST_MathOperation(MathOperation.Modulo);
-                    case Identifiers.Add:
+                    case SyntaxKind.Add_ID:
                         return GetAddOperator();
-                    case Identifiers.Variable:
+                    case SyntaxKind.Variable_ID:
                         return GetVariableCreate();
-                    case Identifiers.Function:
+                    case SyntaxKind.Function_ID:
                         return GetFunctionCreate();
-                    case Identifiers.Identifier:
+                    case SyntaxKind.Identifier_ID:
                         return GetIdentifier();
-                    case Identifiers.Return:
+                    case SyntaxKind.Return_ID:
                         return GetReturnValue();
-                    case Identifiers.Semicolon:
-                        NextToken(Identifiers.Semicolon);
+                    case SyntaxKind.Semicolon_ID:
+                        NextToken(SyntaxKind.Semicolon_ID);
                         return Identify();// new AST_None("End (Semicolon)");
-                    case Identifiers.Colon:
+                    case SyntaxKind.Colon_ID:
                         return GetFunctionArgument();
-                    case Identifiers.Integer:
-                        NextToken(Identifiers.Integer);
+                    case SyntaxKind.Integer_ID:
+                        NextToken(SyntaxKind.Integer_ID);
                         return new AST_Integer(token);
-                    case Identifiers.Float:
-                        NextToken(Identifiers.Float);
+                    case SyntaxKind.Float_ID:
+                        NextToken(SyntaxKind.Float_ID);
                         return new AST_Float(token);
-                    case Identifiers.String:
-                        NextToken(Identifiers.String);
+                    case SyntaxKind.String_ID:
+                        NextToken(SyntaxKind.String_ID);
                         return new AST_String(token);
-                    case Identifiers.Bool:
-                        NextToken(Identifiers.Bool);
+                    case SyntaxKind.Bool_ID:
+                        NextToken(SyntaxKind.Bool_ID);
                         return new AST_Bool(token);
-                    case Identifiers.Comma:
-                        NextToken(Identifiers.Comma);
+                    case SyntaxKind.Comma_ID:
+                        NextToken(SyntaxKind.Comma_ID);
                         return Identify();
+                    case SyntaxKind.If_KW:
+                        return GetIfKeyword();
+                    case SyntaxKind.Else_KW:
+                        return GetElseKeyword();
+                    case SyntaxKind.For_KW:
+                        return GetForLoop();
+                    case SyntaxKind.Range_KW:
+                        return GetRangeKeyword();
+                    case SyntaxKind.Len_KW:
+                        return GetLenKeyword();
                     default:
                         Debug.WriteLine("Emty: " + currentToken.Type);
                         NextToken();
                         return new AST_None();
                 }
-            }
-            else if (token.Type is Keywords keyword)
-            {
-                switch (keyword)
-                {
-                    case Keywords.If:
-                        return GetIfKeyword();
-                    case Keywords.Else:
-                        return GetElseKeyword();
-                    case Keywords.For:
-                        return GetForLoop();
-                    case Keywords.Range:
-                        return GetRangeKeyword();
-                    case Keywords.Len:
-                        return GetLenKeyword();
-                }
-                return null;
             }
             return null;
         }

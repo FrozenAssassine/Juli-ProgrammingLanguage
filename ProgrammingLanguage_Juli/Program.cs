@@ -4,7 +4,6 @@ using ProgrammingLanguage_Juli.Content.AST;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Windows.Forms;
 
 namespace ProgrammingLanguage_Juli
 {
@@ -15,7 +14,6 @@ namespace ProgrammingLanguage_Juli
             foreach (var item in list)
                 PrintNext(item, indention);
         }
-
         private static void PrintNext(AbstractSyntaxTree item, string indent)
         {
             if (item == null)
@@ -91,38 +89,39 @@ namespace ProgrammingLanguage_Juli
                 Console.WriteLine(indent + "\t" + access.VariableName + " [" + (access.Start == access.End ? access.Start.ToString() : (access.Start + "-" + access.End)) + "]");
             }
         }
+        private static void PrintAST(string code)
+        {
+            Lexer lexer = new Lexer(code);
+            Parser parser = new Parser(lexer);
+            var root = parser.Parse();
+            while (root.NextItem != null)
+            {
+                PrintNext(root.NextItem, "");
+                root = root.NextItem;
+            }
+        }
+
 
         static void Main(string[] args)
         {
             int Action = 1;
-            string data = File.ReadAllText("code1.juli");
+            string code = File.ReadAllText("code.juli");
 
             if (Action == 0)
-            {
-                Lexer lexer = new Lexer(data);
-                Parser parser = new Parser(lexer);
-                var root = parser.Parse();
-                while (root.NextItem != null)
-                {
-                    PrintNext(root.NextItem, "");
-                    root = root.NextItem;
-                }
-
-                Console.ReadLine();
-            }
+                PrintAST(code);
             else
             {
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
                 Interpreter interpreter = new Interpreter();
-                interpreter.Interpret(data);
+                interpreter.Interpret(code);
 
                 sw.Stop();
                 Console.WriteLine("\n-----------------------------------------------------------------");
                 Console.WriteLine(sw.ElapsedMilliseconds + ":" + sw.ElapsedTicks);
-                Console.ReadLine();
             }
+            Console.ReadLine();
         }
     }
 }

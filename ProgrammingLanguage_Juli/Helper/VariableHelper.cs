@@ -89,15 +89,15 @@ namespace Juli_ProgLang.Helper
         }
         public static VariableDataType DetectDataType(Token token)
         {
-            if (token.Type is Identifiers identifier)
+            if (token.Type is SyntaxKind identifier)
             {
-                if (identifier == Identifiers.String)
+                if (identifier == SyntaxKind.String_ID)
                     return VariableDataType.String;
-                if (identifier == Identifiers.Integer)
+                if (identifier == SyntaxKind.Integer_ID)
                     return VariableDataType.Integer;
-                if (identifier == Identifiers.Float)
+                if (identifier == SyntaxKind.Float_ID)
                     return VariableDataType.Float;
-                if (identifier == Identifiers.Bool)
+                if (identifier == SyntaxKind.Bool_ID)
                     return VariableDataType.Bool;
             }
             throw new Exception("Datatype of variable could not be determinated: " + token.Type);

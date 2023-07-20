@@ -1,8 +1,5 @@
 ﻿using Juli_ProgLang.Content;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Text;
 
 namespace Juli_ProgLang
@@ -40,7 +37,7 @@ namespace Juli_ProgLang
             currentChar = Position < Text.Length ? Text[Position] : '\0';
         }
 
-        private (string, Identifiers) GetNumberString()
+        private (string, SyntaxKind) GetNumberString()
         {
             StringBuilder result = new StringBuilder();
             while (currentChar != '\0' && char.IsDigit(currentChar) || currentChar == '.')
@@ -48,7 +45,7 @@ namespace Juli_ProgLang
                 result.Append(currentChar);
                 Advance();
             }
-            return (result.ToString(), result.ToString().Contains(".") ? Identifiers.Float : Identifiers.Integer);
+            return (result.ToString(), result.ToString().Contains(".") ? SyntaxKind.Float_ID : SyntaxKind.Integer_ID);
         }
         private string GetString()
         {
@@ -103,41 +100,41 @@ namespace Juli_ProgLang
                     return new Token(res.Item2, res.Item1);
                 }
                 if (currentChar == '"')
-                    return new Token(Identifiers.String, GetString());
+                    return new Token(SyntaxKind.String_ID, GetString());
                 if (currentChar == '(')
                 {
                     Advance();
-                    return new Token(Identifiers.LeftParen);
+                    return new Token(SyntaxKind.LeftParen_ID);
                 }
                 if (currentChar == ')')
                 {
                     Advance();
-                    return new Token(Identifiers.RightParen);
+                    return new Token(SyntaxKind.RightParen_ID);
                 }
                 if (currentChar == '}')
                 {
                     Advance();
-                    return new Token(Identifiers.RightCurly);
+                    return new Token(SyntaxKind.RightCurly_ID);
                 }
                 if (currentChar == '{')
                 {
                     Advance();
-                    return new Token(Identifiers.LeftCurly);
+                    return new Token(SyntaxKind.LeftCurly_ID);
                 }
                 if (currentChar == '[')
                 {
                     Advance();
-                    return new Token(Identifiers.LeftSqrBracket);
+                    return new Token(SyntaxKind.LeftSqrBracket_ID);
                 }
                 if (currentChar == ']')
                 {
                     Advance();
-                    return new Token(Identifiers.RightSqrBracket);
+                    return new Token(SyntaxKind.RightSqrBracket_ID);
                 }
                 if (currentChar == ';')
                 {
                     Advance();
-                    return new Token(Identifiers.Semicolon);
+                    return new Token(SyntaxKind.Semicolon_ID);
                 }
                 if (currentChar == '=')
                 {
@@ -145,9 +142,9 @@ namespace Juli_ProgLang
                     if (currentChar == '=') //check also for == (compare)
                     {
                         Advance();
-                        return new Token(Identifiers.Compare);
+                        return new Token(SyntaxKind.Compare_ID);
                     }
-                    return new Token(Identifiers.Equals);
+                    return new Token(SyntaxKind.Equals_ID);
                 }
                 if (currentChar == '>')
                 {
@@ -155,9 +152,9 @@ namespace Juli_ProgLang
                     if (currentChar == '=') //check also for >= (greater equals)
                     {
                         Advance();
-                        return new Token(Identifiers.GreaterEquals);
+                        return new Token(SyntaxKind.GreaterEquals_ID);
                     }
-                    return new Token(Identifiers.Greater);
+                    return new Token(SyntaxKind.Greater_ID);
                 }
                 if (currentChar == '<')
                 {
@@ -165,9 +162,9 @@ namespace Juli_ProgLang
                     if (currentChar == '=') //check also for <= (smaller equals)
                     {
                         Advance();
-                        return new Token(Identifiers.SmallerEquals);
+                        return new Token(SyntaxKind.SmallerEquals_ID);
                     }
-                    return new Token(Identifiers.Smaller);
+                    return new Token(SyntaxKind.Smaller_ID);
                 }
                 if (currentChar == '!')
                 {
@@ -175,150 +172,147 @@ namespace Juli_ProgLang
                     if (currentChar == '=')
                     {
                         Advance();
-                        return new Token(Identifiers.NotEquals);
+                        return new Token(SyntaxKind.NotEquals_ID);
                     }
-                    return new Token(Identifiers.Not);
+                    return new Token(SyntaxKind.Not_ID);
                 }
                 if (currentChar == ':')
                 {
                     Advance();
-                    return new Token(Identifiers.Colon);
+                    return new Token(SyntaxKind.Colon_ID);
                 }
                 if (currentChar == '+')
                 {
                     Advance();
-                    return new Token(Identifiers.Add);
+                    return new Token(SyntaxKind.Add_ID);
                 }
                 if (currentChar == '-')
                 {
                     Advance();
-                    return new Token(Identifiers.Subtract);
+                    return new Token(SyntaxKind.Subtract_ID);
                 }
                 if (currentChar == '*')
                 {
                     Advance();
-                    return new Token(Identifiers.Multiply);
+                    return new Token(SyntaxKind.Multiply_ID);
                 }
                 if (currentChar == '/')
                 {
                     Advance();
-                    return new Token(Identifiers.Divide);
+                    return new Token(SyntaxKind.Divide_ID);
                 }
                 if (currentChar == '%')
                 {
                     Advance();
-                    return new Token(Identifiers.Modulo);
+                    return new Token(SyntaxKind.Modulo_ID);
                 }
                 if (currentChar == ',')
                 {
                     Advance();
-                    return new Token(Identifiers.Comma);
+                    return new Token(SyntaxKind.Comma_ID);
                 }
                 if (IsSequence("if"))
                 {
                     Advance(2);
-                    return new Token(Keywords.If);
+                    return new Token(SyntaxKind.If_KW);
                 }
                 if (IsSequence("else"))
                 {
                     Advance(4);
-                    return new Token(Keywords.Else);
+                    return new Token(SyntaxKind.Else_KW);
                 }
                 if (IsSequence("for"))
                 {
                     Advance(3);
-                    return new Token(Keywords.For);
+                    return new Token(SyntaxKind.For_KW);
                 }
                 if (IsSequence("var"))
                 {
                     Advance(3);
-                    return new Token(Identifiers.Variable);
+                    return new Token(SyntaxKind.Variable_ID);
                 }
                 if (IsSequence("func"))
                 {
                     Advance(4);
-                    return new Token(Identifiers.Function);
+                    return new Token(SyntaxKind.Function_ID);
                 }
                 if (IsSequence("null"))
                 {
                     Advance(4);
-                    return new Token(Identifiers.Null);
+                    return new Token(SyntaxKind.Null_ID);
                 }
                 if (IsSequence("&&"))
                 {
                     Advance(2);
-                    return new Token(Identifiers.And);
+                    return new Token(SyntaxKind.And_ID);
                 }
                 if (IsSequence("||"))
                 {
                     Advance(2);
-                    return new Token(Identifiers.Or);
+                    return new Token(SyntaxKind.Or_ID);
                 }
                 if (IsSequence("true"))
                 {
                     Advance(4);
-                    return new Token(Keywords.True);
+                    return new Token(SyntaxKind.True_KW);
                 }
                 if (IsSequence("false"))
                 {
                     Advance(5);
-                    return new Token(Keywords.False);
+                    return new Token(SyntaxKind.False_KW);
                 }
                 if (IsSequence("string"))
                 {
                     Advance(6);
-                    return new Token(Identifiers.String);
+                    return new Token(SyntaxKind.String_ID);
                 }
                 if (IsSequence("int"))
                 {
                     Advance(3);
-                    return new Token(Identifiers.Integer);
+                    return new Token(SyntaxKind.Integer_ID);
                 }
                 if (IsSequence("float"))
                 {
                     Advance(5);
-                    return new Token(Identifiers.Float);
+                    return new Token(SyntaxKind.Float_ID);
                 }
                 if (IsSequence("bool"))
                 {
                     Advance(4);
-                    return new Token(Identifiers.Bool);
+                    return new Token(SyntaxKind.Bool_ID);
                 }
                 if (IsSequence("in"))
                 {
                     Advance(2);
-                    return new Token(Keywords.In);
+                    return new Token(SyntaxKind.In_KW);
                 }
                 if (IsSequence("range"))
                 {
                     Advance(5);
-                    return new Token(Keywords.Range);
+                    return new Token(SyntaxKind.Range_KW);
                 }
                 if (IsSequence("return"))
                 {
                     Advance(6);
-                    return new Token(Identifiers.Return);
+                    return new Token(SyntaxKind.Return_ID);
                 }
                 if (IsSequence("len"))
                 {
                     Advance(3);
-                    return new Token(Keywords.Len);
+                    return new Token(SyntaxKind.Len_KW);
                 }
                 if (char.IsLetter(currentChar) || currentChar == '_')
                 {
-                    return new Token(Identifiers.Identifier, GetIdentifier());
+                    return new Token(SyntaxKind.Identifier_ID, GetIdentifier());
                 }
                 throw new Exception($"Wrong character: {currentChar}");
             }
             return null;
         }
     }
-    public enum Keywords
+    public enum SyntaxKind
     {
-        If, For, In, Else, True, False, Range, Len
-    }
-    public enum Identifiers
-    {
-        String, Integer, Float, Bool, Identifier, Variable, LeftParen, RightParen, Semicolon, Equals, FunctionCall, Function, Add, Subtract, Multiply, Divide, Modulo, LeftCurly, RightCurly, Comma, Greater, Smaller, Not, LeftSqrBracket, RightSqrBracket, Null, Compare, And, Or, NotEquals, GreaterEquals,SmallerEquals,Colon, Return
+        If_KW, For_KW, In_KW, Else_KW, True_KW, False_KW, Range_KW, Len_KW,
+        String_ID, Integer_ID, Float_ID, Bool_ID, Identifier_ID, Variable_ID, LeftParen_ID, RightParen_ID, Semicolon_ID, Equals_ID, FunctionCall_ID, Function_ID, Add_ID, Subtract_ID, Multiply_ID, Divide_ID, Modulo_ID, LeftCurly_ID, RightCurly_ID, Comma_ID, Greater_ID, Smaller_ID, Not_ID, LeftSqrBracket_ID, RightSqrBracket_ID, Null_ID, Compare_ID, And_ID, Or_ID, NotEquals_ID, GreaterEquals_ID, SmallerEquals_ID, Colon_ID, Return_ID
     }
 }
